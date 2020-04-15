@@ -10,6 +10,21 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 
 i = False
 
+_startup_idle = False
+_standby = False
+_berry_flush = False
+_flush_delay = False
+_flush1 = False
+_flush2 = False
+_flush3 = False
+_flush4 = False
+_flush5 = False
+_navigation = False
+_cleanout = False
+_shutdown = False
+
+
+
 class Ui_MainWindow(object):
 	def setupUi(self, MainWindow):
 		MainWindow.setObjectName("Berry Transport System")
@@ -177,7 +192,19 @@ class Ui_MainWindow(object):
 		QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
 
-		self.Startup_Idel.clicked.connect(lambda: self.clicked())
+		self.Startup_Idel.clicked.connect(lambda: self.clicked("startup_idel"))
+		self.Standby.clicked.connect(lambda: self.clicked("standby"))
+		self.Berry_Flush.clicked.connect(lambda: self.clicked("berry_flush"))
+		self.Flush_Delay.clicked.connect(lambda: self.clicked("flush_delay"))
+		self.Flush1.clicked.connect(lambda: self.clicked("flush1"))
+		self.Flush2.clicked.connect(lambda: self.clicked("flush2"))
+		self.Flush3.clicked.connect(lambda: self.clicked("flush3"))
+		self.Flush4.clicked.connect(lambda: self.clicked("flush4"))
+		self.Flush5.clicked.connect(lambda: self.clicked("flush5"))
+		self.Navigation.clicked.connect(lambda: self.clicked("navigation"))
+		self.Cleanout.clicked.connect(lambda: self.clicked("cleanout"))
+		self.Shutdown.clicked.connect(lambda: self.clicked("shutdown"))
+
 		self.AutoFlush.currentTextChanged.connect(lambda: self.autoState())
 
 	def retranslateUi(self, MainWindow):
@@ -204,23 +231,170 @@ class Ui_MainWindow(object):
 		self.Flush3.setText(_translate("MainWindow", "Flush3"))
 		self.Flush4.setText(_translate("MainWindow", "Flush4"))
 		self.Flush5.setText(_translate("MainWindow", "Flush5"))
-		
+
 		self.AutoFlush.setItemText(0, _translate("MainWindow", "Off"))
 		self.AutoFlush.setItemText(1, _translate("MainWindow", "On"))
 
 
-	def clicked(self):
-		global i
-		if i == False:
-			self.label_main.setText(str(i))
-			self.label_main.adjustSize()
-			self.Startup_Idel.setStyleSheet("background-color: rgb(0,255,0)")
-			i = True
-		else:
-			self.label_main.setText(str(i))
-			self.label_main.adjustSize()
-			self.Startup_Idel.setStyleSheet("background-color: rgb(225,225,225)")
-			i = False
+	def clicked(self, text):
+
+		global _startup_idle
+		global _standby
+		global _berry_flush
+		global _flush_delay
+		global _flush1
+		global _flush2
+		global _flush3
+		global _flush4
+		global _flush5
+		global _navigation
+		global _cleanout
+		global _shutdown
+
+		if text == "startup_idel":
+			if _startup_idle == False:
+				self.label_main.setText("Mode 1 - On")
+				self.label_main.adjustSize()
+				self.Startup_Idel.setStyleSheet("background-color: rgb(0,255,0)")
+				_startup_idle = True
+			else:
+				self.label_main.setText("Mode 1 - Off")
+				self.label_main.adjustSize()
+				self.Startup_Idel.setStyleSheet("background-color: rgb(225,225,225)")
+				_startup_idle = False
+
+		elif text == "standby":
+			if _standby == False:
+				self.label_main.setText("Mode 2 - On")
+				self.label_main.adjustSize()
+				self.Standby.setStyleSheet("background-color: rgb(0,255,0)")
+				_standby = True
+			else:
+				self.label_main.setText("Mode 2 - Off")
+				self.label_main.adjustSize()
+				self.Standby.setStyleSheet("background-color: rgb(225,225,225)")
+				_standby = False
+
+		elif text == "berry_flush":
+			if _berry_flush == False:
+				self.label_main.setText("Mode 3 - On")
+				self.label_main.adjustSize()
+				self.Berry_Flush.setStyleSheet("background-color: rgb(0,255,0)")
+				_berry_flush = True
+			else:
+				self.label_main.setText("Mode 3 - Off")
+				self.label_main.adjustSize()
+				self.Berry_Flush.setStyleSheet("background-color: rgb(225,225,225)")
+				_berry_flush = False
+
+		elif text == "flush_delay":
+			if _flush_delay == False:
+				self.label_main.setText("Mode 4 - On")
+				self.label_main.adjustSize()
+				self.Flush_Delay.setStyleSheet("background-color: rgb(0,255,0)")
+				_flush_delay = True
+			else:
+				self.label_main.setText("Mode 4 - Off")
+				self.label_main.adjustSize()
+				self.Flush_Delay.setStyleSheet("background-color: rgb(225,225,225)")
+				_flush_delay = False
+
+		elif text == "flush1":
+			if _flush1 == False:
+				self.label_main.setText("Mode 5 - On")
+				self.label_main.adjustSize()
+				self.Flush1.setStyleSheet("background-color: rgb(0,255,0)")
+				_flush1 = True
+			else:
+				self.label_main.setText("Mode 5 - Off")
+				self.label_main.adjustSize()
+				self.Flush1.setStyleSheet("background-color: rgb(225,225,225)")
+				_flush1 = False
+
+		elif text == "flush2":
+			if _flush2 == False:
+				self.label_main.setText("Mode 6 - On")
+				self.label_main.adjustSize()
+				self.Flush2.setStyleSheet("background-color: rgb(0,255,0)")
+				_flush2 = True
+			else:
+				self.label_main.setText("Mode 6 - Off")
+				self.label_main.adjustSize()
+				self.Flush2.setStyleSheet("background-color: rgb(225,225,225)")
+				_flush2 = False
+
+		elif text == "flush3":
+			if _flush3 == False:
+				self.label_main.setText("Mode 7 - On")
+				self.label_main.adjustSize()
+				self.Flush3.setStyleSheet("background-color: rgb(0,255,0)")
+				_flush3 = True
+			else:
+				self.label_main.setText("Mode 7 - Off")
+				self.label_main.adjustSize()
+				self.Flush3.setStyleSheet("background-color: rgb(225,225,225)")
+				_flush3 = False
+
+		elif text == "flush4":
+			if _flush4 == False:
+				self.label_main.setText("Mode 8 - On")
+				self.label_main.adjustSize()
+				self.Flush4.setStyleSheet("background-color: rgb(0,255,0)")
+				_flush4 = True
+			else:
+				self.label_main.setText("Mode 8 - Off")
+				self.label_main.adjustSize()
+				self.Flush4.setStyleSheet("background-color: rgb(225,225,225)")
+				_flush4 = False
+
+		elif text == "flush5":
+			if _flush5 == False:
+				self.label_main.setText("Mode 9 - On")
+				self.label_main.adjustSize()
+				self.Flush5.setStyleSheet("background-color: rgb(0,255,0)")
+				_flush5 = True
+			else:
+				self.label_main.setText("Mode 9 - Off")
+				self.label_main.adjustSize()
+				self.Flush5.setStyleSheet("background-color: rgb(225,225,225)")
+				_flush5 = False
+
+		elif text == "navigation":
+			if _navigation == False:
+				self.label_main.setText("Mode 10 - On")
+				self.label_main.adjustSize()
+				self.Navigation.setStyleSheet("background-color: rgb(0,255,0)")
+				_navigation= True
+			else:
+				self.label_main.setText("Mode 10 - Off")
+				self.label_main.adjustSize()
+				self.Navigation.setStyleSheet("background-color: rgb(225,225,225)")
+				_navigation = False
+
+		elif text == "cleanout":
+			if _cleanout == False:
+				self.label_main.setText("Mode 11 - On")
+				self.label_main.adjustSize()
+				self.Cleanout.setStyleSheet("background-color: rgb(0,255,0)")
+				_cleanout = True
+			else:
+				self.label_main.setText("Mode 11 - Off")
+				self.label_main.adjustSize()
+				self.Cleanout.setStyleSheet("background-color: rgb(225,225,225)")
+				_cleanout = False
+
+		elif text == "shutdown":
+			if _shutdown == False:
+				self.label_main.setText("Mode 12 - On")
+				self.label_main.adjustSize()
+				self.Shutdown.setStyleSheet("background-color: rgb(0,255,0)")
+				_shutdown = True
+			else:
+				self.label_main.setText("Mode 12 - Off")
+				self.label_main.adjustSize()
+				self.Shutdown.setStyleSheet("background-color: rgb(225,225,225)")
+				_shutdown = False		
+
 
 	def autoState(self):
 		if self.AutoFlush.currentText() == "Off":
