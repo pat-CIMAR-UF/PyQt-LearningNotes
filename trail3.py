@@ -8,6 +8,12 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
+import socket
+import pika
+
+import time
+from umodbus import conf
+from umodbus.client import tcp
 
 _startup_idle = False
 _standby = False
@@ -21,6 +27,219 @@ _flush5 = False
 _navigation = False
 _cleanout = False
 _shutdown = False
+
+
+def button(func, state):
+
+	state = not state
+	ret_word = ""
+	ret_state = False
+
+	conf.SIGNED_VALUES = True
+	plc_ip = '192.168.10.35'
+	port_id = 502
+	sl_id = 0
+	writing_value = 1
+
+	# socket
+	sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  
+	# 502 is the port  
+	sock.connect((plc_ip, port_id))
+
+	if (func == 0):
+		message = tcp.read_coils(slave_id = 1, starting_address = func, quantity = 1)
+		response = tcp.send_message(message, sock)
+
+		if (response[0]):
+			message = tcp.write_single_coil(slave_id = 1, address = func, value = 0)
+			response = tcp.send_message(message, sock)
+			ret_word = "Failed to flush all"
+			return ret_state,ret_word
+		else:
+			row_Entry_message = tcp.read_coils(slave_id = 1, starting_address = 1, quantity = 1)
+			row_Entry_response = tcp.send_message(row_Entry_message, sock)
+			row_Entry_state = row_Entry_response[0]
+			if (row_Entry_state):
+				message = tcp.write_single_coil(slave_id = 1, address = func, value = 1)
+				response = tcp.send_message(message, sock)
+
+				message = tcp.read_coils(slave_id = 1, starting_address = func, quantity = 1)
+				response = tcp.send_message(message, sock)
+				if(response[0]):
+					ret_word = "flush for 1 sec"
+					ret_state = True
+					time.sleep(1)
+					message = tcp.write_single_coil(slave_id = 1, address = func, value = 0)
+					response = tcp.send_message(message, sock)
+					return ret_state,ret_word
+				else:
+					ret_word = "failed to set flush on"
+					return ret_state,ret_word
+			else:
+				ret_word = "Harvester not on row_Entry state, make sure it is on row_Entry state first to flush"
+				return ret_state,ret_word
+
+	elif (func == 1):
+		# Make sure row_Out state is 0
+		message = tcp.write_single_coil(slave_id = 1, address = 2, value = 0)
+		response = tcp.send_message(message, sock)
+
+		# Make sure clean state is 0
+		message = tcp.write_single_coil(slave_id = 1, address = 3, value = 0)
+		response = tcp.send_message(message, sock)
+
+		message = tcp.write_single_coil(slave_id = 1, address = func, value = 1)
+		response = tcp.send_message(message, sock)
+		
+		message = tcp.read_coils(slave_id = 1, starting_address = func, quantity = 1)
+		response = tcp.send_message(message, sock)
+		if(response[0]):
+			ret_state = True
+			ret_word = "row_Entry on"
+			return ret_state,ret_word
+		else:
+			ret_word = "failed to set row_Entry on"
+			return ret_state,ret_word
+
+	elif (func == 2):
+		# Make sure row_Entry state is 0
+		message = tcp.write_single_coil(slave_id = 1, address = 1, value = 0)
+		response = tcp.send_message(message, sock)
+
+		#Make sure flush state is 0
+		message = tcp.write_single_coil(slave_id = 1, address = 0, value = 0)
+		response = tcp.send_message(message, sock)
+
+		message = tcp.write_single_coil(slave_id = 1, address = func, value = 1)
+		response = tcp.send_message(message, sock)
+		
+		message = tcp.read_coils(slave_id = 1, starting_address = func, quantity = 1)
+		response = tcp.send_message(message, sock)
+		if(response[0]):
+			ret_state = True
+			ret_word = "row_Out on"
+			return ret_state,ret_word
+		else:
+			ret_word = "failed to set row_Out on"
+			return ret_state,ret_word
+
+	elif (func == 3):
+		message = tcp.read_coils(slave_id = 1, starting_address = func, quantity = 1)
+		response = tcp.send_message(message, sock)
+		if (response[0]):
+			message = tcp.write_single_coil(slave_id = 1, address = func, value = 0)
+			response = tcp.send_message(message, sock)
+		else:
+			message = tcp.read_coils(slave_id = 1, starting_address = 2, quantity = 1)
+			response = tcp.send_message(message, sock)
+			if (response[0] != 1):
+				ret_word = "row_Out is not on, make sure row_Out is on first"
+				return ret_state,ret_word
+
+			else:
+				message = tcp.write_single_coil(slave_id = 1, address = func, value = 1)
+				response = tcp.send_message(message, sock)
+
+				message = tcp.read_coils(slave_id = 1, starting_address = func, quantity = 1)
+				response = tcp.send_message(message, sock)
+				if(response[0]):
+					ret_state = True
+					ret_word = "clean on"
+					return ret_state,ret_word
+				else:
+					ret_word = "failed to set clean on"
+					return ret_state,ret_word
+		
+	elif (func == 4):
+		message = tcp.write_single_register(slave_id = 1, address = 0, value = 16)
+		response = tcp.send_message(message, sock)
+
+	elif (func == 5):
+		message = tcp.write_single_coil(slave_id=1, address=func,value=1)
+		response = tcp.send_message(message,sock)
+		time.sleep(1)
+		message = tcp.write_single_coil(slave_id = 1, address = func, value = 0)
+		response = tcp.send_message(message, sock)
+		ret_word = "trough 1"
+		return ret_state,ret_word
+
+	elif (func == 6):
+		message = tcp.write_single_coil(slave_id=1, address=func,value=1)
+		response = tcp.send_message(message,sock)
+		time.sleep(1)
+		message = tcp.write_single_coil(slave_id = 1, address = func, value = 0)
+		response = tcp.send_message(message, sock)
+		ret_word = "trough 2"
+		return ret_state,ret_word
+
+	elif (func == 7):
+		message = tcp.write_single_coil(slave_id=1, address=func,value=1)
+		response = tcp.send_message(message,sock)
+		time.sleep(1)
+		message = tcp.write_single_coil(slave_id = 1, address = func, value = 0)
+		response = tcp.send_message(message, sock)
+		ret_word = "trough 3"
+		return ret_state,ret_word
+
+	elif (func == 8):
+		message = tcp.write_single_coil(slave_id=1, address=func,value=1)
+		response = tcp.send_message(message,sock)
+		time.sleep(1)
+		message = tcp.write_single_coil(slave_id = 1, address = func, value = 0)
+		response = tcp.send_message(message, sock)
+		ret_word = "trough 4"
+		return ret_state,ret_word
+
+	elif (func == 9):
+		message = tcp.write_single_coil(slave_id=1, address=func,value=1)
+		response = tcp.send_message(message,sock)
+		time.sleep(1)
+		message = tcp.write_single_coil(slave_id = 1, address = func, value = 0)
+		response = tcp.send_message(message, sock)
+		ret_word = "trough 5"
+		return ret_state,ret_word
+
+	if (func == 10):
+		message = tcp.read_coils(slave_id = 1, starting_address = func, quantity = 1)
+		response = tcp.send_message(message, sock)
+
+		if (response[0]):
+			message = tcp.write_single_coil(slave_id = 1, address = func, value = 0)
+			response = tcp.send_message(message, sock)
+		else:
+			row_Entry_message = tcp.read_coils(slave_id = 1, starting_address = 1, quantity = 1)
+			row_Entry_response = tcp.send_message(row_Entry_message, sock)
+			row_Entry_state = row_Entry_response[0]
+			if (row_Entry_state):
+				message = tcp.write_single_coil(slave_id = 1, address = func, value = 1)
+				response = tcp.send_message(message, sock)
+
+				message = tcp.read_coils(slave_id = 1, starting_address = func, quantity = 1)
+				response = tcp.send_message(message, sock)
+				if(response[0]):
+					ret_state = True
+					ret_word = "flush_with_delay on"
+					time.sleep(1)
+					message = tcp.write_single_coil(slave_id = 1, address = func, value = 0)
+					response = tcp.send_message(message, sock)
+					return ret_state,ret_word
+				else:
+					ret_word = "failed to set flush on"
+					return ret_state,ret_word
+			else:
+				ret_word = "Harvester not on row_Entry state, make sure it is on row_Entry state first to flush"
+				return ret_state,ret_word
+
+
+	elif (func == -1):
+		message = tcp.write_single_register(slave_id = 1, address = 0, value = 0)
+		response = tcp.send_message(message, sock) 
+		ret_state = True
+		ret_word = "Close all"
+		return ret_state,ret_word
+
+	return ret_state,ret_word
+	sock.close()
 
 
 class Ui_MainWindow(object):
@@ -210,7 +429,6 @@ class Ui_MainWindow(object):
 		self.label_main.setText(_translate("MainWindow", "TextLabel"))
 
 	def clicked(self, text):
-
 		global _startup_idle
 		global _standby
 		global _berry_flush
@@ -226,9 +444,11 @@ class Ui_MainWindow(object):
 
 		if text == "startup_idle":
 			if _startup_idle == False:
-				self.label_main.setText("Mode 1 - On")
+				ret_state, ret_word = button(4, _startup_idle)
+				self.label_main.setText(ret_word)
 				self.label_main.adjustSize()
-				self.Startup_Idle.setStyleSheet("background-color: rgb(0,255,0)")
+				if ret_state:
+					self.Startup_Idle.setStyleSheet("background-color: rgb(0,255,0)")
 				_startup_idle = True
 			else:
 				self.label_main.setText("Mode 1 - Off")
@@ -238,9 +458,11 @@ class Ui_MainWindow(object):
 
 		elif text == "standby":
 			if _standby == False:
-				self.label_main.setText("Mode 2 - On")
+				ret_state, ret_word = button(1, _standby)
+				self.label_main.setText(ret_word)
 				self.label_main.adjustSize()
-				self.Standby.setStyleSheet("background-color: rgb(0,255,0)")
+				if ret_state:
+					self.Standby.setStyleSheet("background-color: rgb(0,255,0)")
 				_standby = True
 			else:
 				self.label_main.setText("Mode 2 - Off")
@@ -250,9 +472,11 @@ class Ui_MainWindow(object):
 
 		elif text == "berry_flush":
 			if _berry_flush == False:
-				self.label_main.setText("Mode 3 - On")
+				ret_state, ret_word = button(0, _berry_flush)
+				self.label_main.setText(ret_word)
 				self.label_main.adjustSize()
-				self.Berry_Flush.setStyleSheet("background-color: rgb(0,255,0)")
+				if ret_state:
+					self.Berry_Flush.setStyleSheet("background-color: rgb(0,255,0)")
 				_berry_flush = True
 			else:
 				self.label_main.setText("Mode 3 - Off")
@@ -262,9 +486,11 @@ class Ui_MainWindow(object):
 
 		elif text == "flush_delay":
 			if _flush_delay == False:
-				self.label_main.setText("Mode 4 - On")
+				ret_state, ret_word = button(10, _flush_delay)
+				self.label_main.setText(ret_word)
 				self.label_main.adjustSize()
-				self.Flush_Delay.setStyleSheet("background-color: rgb(0,255,0)")
+				if ret_state:
+					self.Flush_Delay.setStyleSheet("background-color: rgb(0,255,0)")
 				_flush_delay = True
 			else:
 				self.label_main.setText("Mode 4 - Off")
@@ -274,9 +500,11 @@ class Ui_MainWindow(object):
 
 		elif text == "flush1":
 			if _flush1 == False:
-				self.label_main.setText("Mode 5 - On")
+				ret_state, ret_word = button(5, _flush1)
+				self.label_main.setText(ret_word)
 				self.label_main.adjustSize()
-				self.Flush1.setStyleSheet("background-color: rgb(0,255,0)")
+				if ret_state:
+					self.Flush1.setStyleSheet("background-color: rgb(0,255,0)")
 				_flush1 = True
 			else:
 				self.label_main.setText("Mode 5 - Off")
@@ -286,9 +514,11 @@ class Ui_MainWindow(object):
 
 		elif text == "flush2":
 			if _flush2 == False:
-				self.label_main.setText("Mode 6 - On")
+				ret_state, ret_word = button(6, _flush2)
+				self.label_main.setText(ret_word)
 				self.label_main.adjustSize()
-				self.Flush2.setStyleSheet("background-color: rgb(0,255,0)")
+				if ret_state:
+					self.Flush2.setStyleSheet("background-color: rgb(0,255,0)")
 				_flush2 = True
 			else:
 				self.label_main.setText("Mode 6 - Off")
@@ -298,9 +528,11 @@ class Ui_MainWindow(object):
 
 		elif text == "flush3":
 			if _flush3 == False:
-				self.label_main.setText("Mode 7 - On")
+				ret_state, ret_word = button(7, _flush3)
+				self.label_main.setText(ret_word)
 				self.label_main.adjustSize()
-				self.Flush3.setStyleSheet("background-color: rgb(0,255,0)")
+				if ret_state:
+					self.Flush3.setStyleSheet("background-color: rgb(0,255,0)")
 				_flush3 = True
 			else:
 				self.label_main.setText("Mode 7 - Off")
@@ -310,9 +542,11 @@ class Ui_MainWindow(object):
 
 		elif text == "flush4":
 			if _flush4 == False:
-				self.label_main.setText("Mode 8 - On")
+				ret_state, ret_word = button(8, _flush4)
+				self.label_main.setText(ret_state)
 				self.label_main.adjustSize()
-				self.Flush4.setStyleSheet("background-color: rgb(0,255,0)")
+				if ret_state:
+					self.Flush4.setStyleSheet("background-color: rgb(0,255,0)")
 				_flush4 = True
 			else:
 				self.label_main.setText("Mode 8 - Off")
@@ -322,9 +556,11 @@ class Ui_MainWindow(object):
 
 		elif text == "flush5":
 			if _flush5 == False:
-				self.label_main.setText("Mode 9 - On")
+				ret_state, ret_word = button(9, _flush5)
+				self.label_main.setText(ret_state)
 				self.label_main.adjustSize()
-				self.Flush5.setStyleSheet("background-color: rgb(0,255,0)")
+				if ret_state:
+					self.Flush5.setStyleSheet("background-color: rgb(0,255,0)")
 				_flush5 = True
 			else:
 				self.label_main.setText("Mode 9 - Off")
@@ -334,9 +570,11 @@ class Ui_MainWindow(object):
 
 		elif text == "navigation":
 			if _navigation == False:
-				self.label_main.setText("Mode 10 - On")
+				ret_state, ret_word = button(2, _navigation)
+				self.label_main.setText(ret_word)
 				self.label_main.adjustSize()
-				self.Navigation.setStyleSheet("background-color: rgb(0,255,0)")
+				if ret_state:
+					self.Navigation.setStyleSheet("background-color: rgb(0,255,0)")
 				_navigation= True
 			else:
 				self.label_main.setText("Mode 10 - Off")
@@ -346,9 +584,11 @@ class Ui_MainWindow(object):
 
 		elif text == "cleanout":
 			if _cleanout == False:
-				self.label_main.setText("Mode 11 - On")
+				ret_state, ret_word = button(3, _cleanout)
+				self.label_main.setText(ret_word)				
 				self.label_main.adjustSize()
-				self.Cleanout.setStyleSheet("background-color: rgb(0,255,0)")
+				if ret_state:
+					self.Cleanout.setStyleSheet("background-color: rgb(0,255,0)")
 				_cleanout = True
 			else:
 				self.label_main.setText("Mode 11 - Off")
@@ -358,9 +598,11 @@ class Ui_MainWindow(object):
 
 		elif text == "shutdown":
 			if _shutdown == False:
-				self.label_main.setText("Mode 12 - On")
+				ret_state, ret_word = button(-1, _shutdown)
+				self.label_main.setText(ret_word)
 				self.label_main.adjustSize()
-				self.Shutdown.setStyleSheet("background-color: rgb(0,255,0)")
+				if ret_state:
+					self.Shutdown.setStyleSheet("background-color: rgb(0,255,0)")
 				_shutdown = True
 			else:
 				self.label_main.setText("Mode 12 - Off")
