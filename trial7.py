@@ -32,19 +32,9 @@ _shutdown = False
 
 running = True
 
-
-
-
 time_check = "time"
 
 flush_protector = 1
-
-
-
-
-
-
-
 
 class PLC_Message:
     def __init__(self, address, sock):
@@ -66,7 +56,6 @@ def callback(ch, method, properties, body):
     messageReceived = json.loads(body.decode("utf-8") )
     global time_check
     global flush_protector
-    print(1)
     conf.SIGNED_VALUES = True
     plc_ip = '192.168.10.35'
     port_id = 502
@@ -114,37 +103,9 @@ def callback(ch, method, properties, body):
     sock.close()
 
 
-# Connecting to internal network
-credentials = pika.PlainCredentials('control','HarvestCROO')
-parameters = pika.ConnectionParameters(host='192.168.10.24', credentials=credentials)
-connection = pika.BlockingConnection(parameters)
-
-channel = connection.channel()
-channel.exchange_declare(exchange='harvester', exchange_type='topic')
-
-result = channel.queue_declare('', exclusive=True)
-queue_name = result.method.queue
-
-binding_key_list = []
-binding_key_list.append('robot.navigation.rowstartreached')
-binding_key_list.append('robot.navigation.rowendreached')
-binding_key_list.append('command.complexcommand.*')
-
-for binding_key in binding_key_list:
-    channel.queue_bind(exchange='harvester', queue=queue_name, routing_key=binding_key)
-channel.basic_consume(queue=queue_name, on_message_callback=callback, auto_ack=True)
-
-
 def BTS_Auto_Thread():
     global channel
     channel.start_consuming()
-        
-def stop_Auto():
-    global channel
-    global auto_flush_thread
-    channel.stop_consuming()
-    auto_flush_thread.join()
-
 
 def button(func, state):
 
@@ -589,7 +550,7 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "Berry Transport System"))
 
         self.Startup_Idle.setText(_translate("MainWindow", "Startup/Idle"))
         self.Standby.setText(_translate("MainWindow", "Standby"))
@@ -728,19 +689,51 @@ class Ui_MainWindow(object):
                     _startup_idle = False
 
 
+    def consu(self):
+        # Connecting to internal network
+        credentials = pika.PlainCredentials('control','HarvestCROO')
+        parameters = pika.ConnectionParameters(host='192.168.10.24', credentials=credentials)
+        connection = pika.BlockingConnection(parameters)
+
+        self.channel = connection.channel()
+
+        self.channel.exchange_declare(exchange='harvester', exchange_type='topic')
+
+        result = self.channel.queue_declare('', exclusive=True)
+        queue_name = result.method.queue
+
+        binding_key_list = []
+        binding_key_list.append('robot.navigation.rowstartreached')
+        binding_key_list.append('robot.navigation.rowendreached')
+        binding_key_list.append('command.complexcommand.*')
+
+        for binding_key in binding_key_list:
+            self.channel.queue_bind(exchange='harvester', queue=queue_name, routing_key=binding_key)
+        self.channel.basic_consume(queue=queue_name, on_message_callback=callback, auto_ack=True)
+        self.channel.start_consuming()
+
+    def start_worker(self):
+        self.flush_thread = threading.Thread(target=self.consu)
+        self.flush_thread.start()
+
+    def stop_worker(self):
+        self.channel.stop_consuming()
+        self.flush_thread.join()
+
+
     def autoState(self):
         if self.AutoFlush.currentText() == "Off":
-            global channel
-            channel.stop_consuming()
+            self.stop_worker()
             self.label_autoflush.setText("Auto Flush - Off")
         elif self.AutoFlush.currentText() == "On":
-            auto_flush_thread = threading.Thread(target=BTS_Auto_Thread)
-            auto_flush_thread.start()
+            self.start_worker()
             self.label_autoflush.setText("Auto Flush - On")
 
 
 if __name__ == "__main__":
     import sys
+
+
     app = QtWidgets.QApplication(sys.argv)
     MainWindow = QtWidgets.QMainWindow()
     ui = Ui_MainWindow()
