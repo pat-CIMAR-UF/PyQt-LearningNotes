@@ -72,7 +72,7 @@ def callback(ch, method, properties, body):
         row_entry = PLC_Message(1, sock)
         row_entry.write_on()
 
-    elif len(messageReceived) == 1:
+    elif len(messageReceived) == 1 or len(messageReceived) == 3:
         print("row out")
         print(messageReceived)
         row_entry = PLC_Message(1, sock)
@@ -96,9 +96,6 @@ def callback(ch, method, properties, body):
                     t_str = time.ctime(t)
                     print("sent a flush command @ %s" %t_str)
                     flush.write_off()
-                    #flush_protector = 0
-                #elif flush_protector == 0:
-                    #flush_protector = 1
     
     sock.close()
 
